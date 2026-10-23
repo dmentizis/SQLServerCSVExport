@@ -33,7 +33,7 @@ partial class Form1
         ClientSize = new Size(1180, 690);
         MinimumSize = new Size(1050, 690);
         StartPosition = FormStartPosition.CenterScreen;
-        Text = "Database Checksums Export";
+        Text = "SQL Server Persistence";
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 2, RowCount = 2 };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));

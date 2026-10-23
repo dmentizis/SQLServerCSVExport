@@ -16,7 +16,7 @@ public static class DataAccess
             Encrypt = SqlConnectionEncryptOption.Mandatory,
             TrustServerCertificate = database.TrustServerCertificate,
             ConnectTimeout = 15,
-            ApplicationName = "Database Checksums Export"
+            ApplicationName = "SQL Server Persistence"
         };
         if (!database.IntegratedSecurity)
         {
