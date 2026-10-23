@@ -1,4 +1,4 @@
-# Database Checksums Export
+# SQL Server Persistence
 
 Reconstruction of the Windows Forms `DatabaseCompare_Utility` application photographed in `Utilities_Solutions`, implemented in the existing SQLServerCSVExport solution. Targets .NET 10 for Windows.
 
