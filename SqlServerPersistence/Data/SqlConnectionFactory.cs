@@ -10,7 +10,7 @@ public static class SqlConnectionFactory
         var builder = new SqlConnectionStringBuilder
         {
             DataSource = settings.Server,
-            InitialCatalog = settings.Name,
+            InitialCatalog = settings.Database,
             IntegratedSecurity = settings.IntegratedSecurity,
             Encrypt = SqlConnectionEncryptOption.Mandatory,
             TrustServerCertificate = settings.TrustServerCertificate,

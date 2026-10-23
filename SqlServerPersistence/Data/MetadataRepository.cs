@@ -8,7 +8,7 @@ public sealed class MetadataRepository
 {
     public async Task<List<string>> GetDatabasesAsync(ConnectionSettings settings, CancellationToken token)
     {
-        await using var connection = SqlConnectionFactory.Create(settings with { Name = "master" });
+        await using var connection = SqlConnectionFactory.Create(settings with { Database = "master" });
         await connection.OpenAsync(token);
         using var command = new SqlCommand(SqlScripts.Get("Metadata.GetDatabases"), connection);
         await using var reader = await command.ExecuteReaderAsync(token);

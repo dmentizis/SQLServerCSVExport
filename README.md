@@ -16,17 +16,16 @@ A Release build is available at `SqlServerPersistence/bin/Release/net10.0-window
 
 ```
 SqlServerPersistence/
-  Program.cs                 composition root: creates services and registers feature tabs
-  Models/                    connection settings, table/column metadata, exclusions
+  Program.cs                 entry point: runs MainForm
+  UI/                        MainForm (the whole window) and the reusable ConnectionControl
+  Features/ChecksumExport/   export service, checksum query builder and file naming (no UI)
   Data/                      connection factory, identifier quoting, metadata repository, SqlScripts loader
   Sql/                       every SQL statement as an embedded .sql file (Metadata/, ChecksumExport/)
   Csv/                       CSV formatting and the .partial-then-rename file writer
-  Features/ChecksumExport/   export service, checksum query builder, file naming and the tab UI
-  UI/                        MainForm (tab host + shared log), IFeatureTab, ILogSink
-  UI/Controls/               reusable ConnectionControl and LogControl
+  Models/                    connection settings, table/column metadata, exclusions
 ```
 
-A new feature goes in its own `Features/<Name>/` folder, with its SQL under `Sql/<Name>/`. Its tab is a UserControl implementing `IFeatureTab`, registered in `Program.cs` with `MainForm.AddTab`.
+All forms and controls open in the Visual Studio Windows Forms designer. A new feature goes in its own `Features/<Name>/` folder, with its SQL under `Sql/<Name>/`.
 
 1. Enter a server name (for example `localhost` or `server\instance`).
 2. Choose Windows Authentication or enter SQL credentials.
@@ -63,7 +62,7 @@ Recovered from photos:
 Reconstructed or corrected:
 
 - The connection-check and folder-selection handlers were collapsed; the column-metadata query was never expanded. These are implemented from the visible callers and data models.
-- The designer source and project dependencies were not photographed. Layout is built in code-only `*.Designer.cs` files using layout panels. Since the refactor, the shared log sits below the feature tabs instead of beside the Export group.
+- The designer source and project dependencies were not photographed. The `*.Designer.cs` files were rebuilt in standard Visual Studio designer format, following the photographed layout (Source, Exclude Tables, Export and Logger in a 2×2 grid; see `preview.png`).
 - Uses Microsoft.Data.SqlClient 7.1.1 instead of the older System.Data.SqlClient API, and a small tested CSV writer instead of CsvHelper. Package reference: https://www.nuget.org/packages/Microsoft.Data.SqlClient/7.1.1
 - Uses async tasks and cancellation tokens instead of BackgroundWorker, and streams query results instead of buffering entire tables in a DataTable.
 - Fixes partition row counts (SUM of base-table partitions, not MAX across indexes), escapes SQL identifiers, parameterizes metadata lookup, preserves complete binary values with `varbinary(max)`, and keeps primary keys as a list instead of splitting names on semicolons.

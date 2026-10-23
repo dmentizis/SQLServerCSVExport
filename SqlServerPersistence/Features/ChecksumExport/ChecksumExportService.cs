@@ -12,7 +12,7 @@ public sealed class ChecksumExportService(MetadataRepository metadata)
     public async Task<ExportResult> ExportAsync(ConnectionSettings settings, string destination,
         IReadOnlyList<TableExclusion> exclusions, IProgress<ExportProgress> progress, CancellationToken token)
     {
-        if (string.IsNullOrWhiteSpace(settings.Server) || string.IsNullOrWhiteSpace(settings.Name))
+        if (string.IsNullOrWhiteSpace(settings.Server) || string.IsNullOrWhiteSpace(settings.Database))
             throw new ArgumentException("Choose a connected server and database first.");
         if (!Directory.Exists(destination)) throw new DirectoryNotFoundException("Choose an existing export folder.");
 
@@ -78,7 +78,7 @@ public sealed class ChecksumExportService(MetadataRepository metadata)
         finally
         {
             // Use no cancellation token so the outcome is recorded even after Cancel.
-            var manifest = new { settings.Server, Database = settings.Name, Status = status,
+            var manifest = new { settings.Server, settings.Database, Status = status,
                 Algorithm = "SQL Server CHECKSUM", Exported = exported, Excluded = excluded, Failed = failed, Tables = entries };
             await File.WriteAllTextAsync(Path.Combine(directory, "manifest.json"),
                 JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
