@@ -6,10 +6,17 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SqlServerPersistence</RootNamespace>
+    <AssemblyName>SqlServerPersistence</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Loaded by Data/SqlScripts as SqlServerPersistence.Sql.<Folder>.<Name>.sql -->
+    <EmbeddedResource Include="Sql\**\*.sql" />
   </ItemGroup>
 
 </Project>

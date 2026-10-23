@@ -1,6 +1,6 @@
-namespace SQLServerCSVExport.Objects;
+namespace SqlServerPersistence.Models;
 
-public sealed class Table
+public sealed class TableInfo
 {
     public int ObjectId { get; init; }
     public required string Schema { get; init; }
@@ -8,11 +8,4 @@ public sealed class Table
     public long RowCount { get; init; }
     public List<string> PrimaryKeys { get; } = [];
     public override string ToString() => $"{Schema}.{Name}";
-}
-
-public sealed record Column(string Name, string TypeName);
-
-public sealed record ExclusionTable(string Schema, string Table)
-{
-    public override string ToString() => $"{Schema}.{Table}";
 }

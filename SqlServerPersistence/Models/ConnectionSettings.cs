@@ -1,6 +1,6 @@
-namespace SQLServerCSVExport.Objects;
+namespace SqlServerPersistence.Models;
 
-public sealed record Database
+public sealed record ConnectionSettings
 {
     public string Server { get; init; } = "";
     public string Name { get; init; } = "";

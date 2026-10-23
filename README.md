@@ -1,16 +1,32 @@
 # SQL Server Persistence
 
-Reconstruction of the Windows Forms `DatabaseCompare_Utility` application photographed in `Utilities_Solutions`, implemented in the existing SQLServerCSVExport solution. Targets .NET 10 for Windows.
+Reconstruction of the Windows Forms `DatabaseCompare_Utility` application photographed in `Utilities_Solutions`, implemented as the SqlServerPersistence solution. Targets .NET 10 for Windows.
 
 ## Run
 
-Open `SQLServerCSVExport.slnx` in Visual Studio with the .NET desktop development workload and choose SQLServerCSVExport as the startup project, or run:
+Open `SqlServerPersistence.slnx` in Visual Studio with the .NET desktop development workload and choose SqlServerPersistence as the startup project, or run:
 
 ```powershell
-dotnet run --project SQLServerCSVExport
+dotnet run --project SqlServerPersistence
 ```
 
-A Release build is available at `SQLServerCSVExport/bin/Release/net10.0-windows/SQLServerCSVExport.exe`. Keep the accompanying DLLs and runtime files beside the executable. Requires the .NET 10 Windows Desktop Runtime.
+A Release build is available at `SqlServerPersistence/bin/Release/net10.0-windows/SqlServerPersistence.exe`. Keep the accompanying DLLs and runtime files beside the executable. Requires the .NET 10 Windows Desktop Runtime.
+
+## Project structure
+
+```
+SqlServerPersistence/
+  Program.cs                 composition root: creates services and registers feature tabs
+  Models/                    connection settings, table/column metadata, exclusions
+  Data/                      connection factory, identifier quoting, metadata repository, SqlScripts loader
+  Sql/                       every SQL statement as an embedded .sql file (Metadata/, ChecksumExport/)
+  Csv/                       CSV formatting and the .partial-then-rename file writer
+  Features/ChecksumExport/   export service, checksum query builder, file naming and the tab UI
+  UI/                        MainForm (tab host + shared log), IFeatureTab, ILogSink
+  UI/Controls/               reusable ConnectionControl and LogControl
+```
+
+A new feature goes in its own `Features/<Name>/` folder, with its SQL under `Sql/<Name>/`. Its tab is a UserControl implementing `IFeatureTab`, registered in `Program.cs` with `MainForm.AddTab`.
 
 1. Enter a server name (for example `localhost` or `server\instance`).
 2. Choose Windows Authentication or enter SQL credentials.
@@ -47,7 +63,7 @@ Recovered from photos:
 Reconstructed or corrected:
 
 - The connection-check and folder-selection handlers were collapsed; the column-metadata query was never expanded. These are implemented from the visible callers and data models.
-- The designer source and project dependencies were not photographed. Layout is built in `Form1.Designer.cs` using layout panels; the existing solution/project name is retained.
+- The designer source and project dependencies were not photographed. Layout is built in code-only `*.Designer.cs` files using layout panels. Since the refactor, the shared log sits below the feature tabs instead of beside the Export group.
 - Uses Microsoft.Data.SqlClient 7.1.1 instead of the older System.Data.SqlClient API, and a small tested CSV writer instead of CsvHelper. Package reference: https://www.nuget.org/packages/Microsoft.Data.SqlClient/7.1.1
 - Uses async tasks and cancellation tokens instead of BackgroundWorker, and streams query results instead of buffering entire tables in a DataTable.
 - Fixes partition row counts (SUM of base-table partitions, not MAX across indexes), escapes SQL identifiers, parameterizes metadata lookup, preserves complete binary values with `varbinary(max)`, and keeps primary keys as a list instead of splitting names on semicolons.
@@ -59,16 +75,7 @@ These repairs intentionally change some outputs from the photographed implementa
 ## Verification
 
 ```powershell
-dotnet build SQLServerCSVExport.slnx -c Release -m:1
-dotnet run --project SQLServerCSVExport.Tests -c Release -- preview.png
+dotnet build SqlServerPersistence.slnx -c Release
 ```
 
-Verified: clean Release build with zero warnings/errors; 27 checks for CSV formatting, special identifiers, composite/keyless queries, filename safety, file completion/cancellation, connection settings and UI state. The form was rendered and visually inspected.
-
-Optional integration test (not run during reconstruction):
-
-```powershell
-dotnet run --project SQLServerCSVExport.Tests -c Release -- preview.png --integration
-```
-
-The integration command uses Windows authentication against `localhost`, creates a uniquely named `ChecksumExportTest_<guid>` database, tests real exports (including XML/image/geography, empty tables and exclusions), and drops only that test database in cleanup. It requires database-creation permission. It was not executed because permission for that step was declined. Live database export behavior therefore remains unverified.
+The repository does not contain a test project. The `SQLServerCSVExport.Tests` project used during reconstruction (27 checks for CSV formatting, special identifiers, composite/keyless queries, filename safety, file completion/cancellation, connection settings and UI state, plus an optional `--integration` run against a temporary `localhost` database) was never committed. Live database export behavior remains unverified.

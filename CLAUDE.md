@@ -9,22 +9,24 @@ A .NET 10 Windows Forms utility (`net10.0-windows`, nullable + implicit usings e
 ## Commands
 
 ```powershell
-dotnet build SQLServerPersistence.slnx -c Release
-dotnet run --project SQLServerCSVExport
+dotnet build SqlServerPersistence.slnx -c Release
+dotnet run --project SqlServerPersistence
 ```
 
-Naming mismatch to be aware of: the folder and C# namespace are `SQLServerCSVExport`, but the project file is `SQLServerCSVExport/SQLServerPersistence.csproj` and the solution is `SQLServerPersistence.slnx`. README still refers to `SQLServerCSVExport.slnx` and a `SQLServerCSVExport.Tests` project (with `-- preview.png [--integration]`); neither is in the repository, so there are currently no tests to run.
-
-Only package dependency: `Microsoft.Data.SqlClient` 7.1.1 (not `System.Data.SqlClient`; no CsvHelper — CSV writing is hand-rolled in `Helper`).
+There is no test project in the repository (README describes one that was never committed). Only package dependency: `Microsoft.Data.SqlClient` 7.1.1 (not `System.Data.SqlClient`; no CsvHelper).
 
 ## Architecture
 
-All code is in `SQLServerCSVExport/`, namespace `SQLServerCSVExport` (models in `SQLServerCSVExport.Objects`).
+Single project `SqlServerPersistence/`, organised by folder; namespaces mirror folders (`SqlServerPersistence.Models`, `.Data`, `.Csv`, `.Features.ChecksumExport`, `.UI`, `.UI.Controls`).
 
-- `Form1` — UI only. Builds an immutable `Database` record from the inputs, runs operations as async tasks with a `CancellationTokenSource`, and receives progress via `IProgress<ExportProgress>`. Editing connection fields invalidates the checked connection; closing mid-run cancels and waits for cleanup before closing. Layout lives in `Form1.Designer.cs` (layout panels, hand-written).
-- `DataAccess` — all metadata SQL. `CreateConnection` always uses `Encrypt = Mandatory` (TrustServerCertificate is opt-in). Lists databases via `master`, loads tables + estimated row counts (sum of heap/clustered-index partitions) + ordered PK column lists, and per-table column metadata (parameterized). Targets SQL Server 2016+.
-- `ChecksumQuery.Build` — generates the per-table `SELECT <pk cols sorted ordinally>, CHECKSUM(<all cols>) AS [Checksum] ... ORDER BY <ordinals>`. Identifiers must go through `Quote` (bracket-escaping). text/ntext/xml are cast to `nvarchar(max)`; image/geography/geometry/hierarchyid to `varbinary(max)`.
-- `ExportService.ExportAsync` — orchestrates a run: creates a unique `Export_<timestamp>_<guid>` folder, writes `_TableData.csv`, then exports each non-excluded table on its own connection with `SequentialAccess` streaming. Per-table failures are recorded and the run continues; cancellation aborts the whole run. `manifest.json` is always written in `finally` (deliberately without the token) with the final status.
-- `Helper` — CSV formatting (invariant culture, ISO round-trip dates, `0x` hex for binary, RFC-style quoting), safe filename generation (`<schema>_<table>_<sha256 prefix>.csv`), exclusion matching.
+- **Extending:** features are tabs. `Program.cs` is the composition root: it creates services (plain classes, constructor-injected, no DI container) and calls `MainForm.AddTab` for each `UserControl` implementing `UI/IFeatureTab`. `MainForm` is only a tab host plus the shared `LogControl` (`ILogSink`); on close it cancels busy tabs and closes after each raises `OperationFinished`. A new feature (e.g. schema comparison) = `Features/<Name>/` (service + tab) + `Sql/<Name>/*.sql` + one `AddTab` line. `UI/Controls/ConnectionControl` is reusable (settable `Title`, e.g. two instances for source/target); the owning tab runs its `ConnectAsync` under the tab's own `CancellationTokenSource` so Cancel also interrupts connection checks.
+- **SQL lives only in `Sql/**/*.sql`**, compiled as embedded resources. Load via `SqlScripts.Get("Folder.Name")`; templates use `{{Token}}` placeholders filled by `SqlScripts.Render` in a single pass (so substituted identifiers are never re-scanned). Identifiers must go through `SqlIdentifier.Quote`; values go through parameters (`@PascalCase`).
+- `Data/` — `SqlConnectionFactory.Create` always uses `Encrypt = Mandatory` (TrustServerCertificate opt-in). `MetadataRepository` lists databases (via `master`), tables + estimated row counts + ordered PK columns, and per-table columns. Targets SQL Server 2016+.
+- `Features/ChecksumExport/` — `ChecksumQueryBuilder` renders `SelectRowChecksums.sql` (PKs sorted ordinally, text/ntext/xml → `nvarchar(max)`, image/spatial/hierarchyid → `varbinary(max)`, `ORDER BY` ordinals). `ChecksumExportService` creates a unique `Export_<timestamp>_<guid>` folder, writes `_TableData.csv`, streams each non-excluded table on its own connection; per-table failures are recorded and the run continues, cancellation aborts it, and `manifest.json` is always written in `finally` without the token.
+- `Csv/` — `CsvFormatter` (invariant culture, round-trip dates, `0x` hex, RFC quoting) and `CsvFileWriter`, which owns the output invariant: write to `<name>.partial` (UTF-8 without BOM, CRLF) and rename only on completion without cancellation. Use it for any new CSV output — a `.partial` file must never look like a completed export.
 
-Output-file invariant: every CSV is written to `<name>.partial` and only renamed to its final name after completing without cancellation. Preserve this pattern (and UTF-8 without BOM, CRLF) in any new writer — a `.partial` file must never be mistaken for a completed export.
+## Conventions
+
+- One type per file, file named after the type; private fields `_camelCase`; async methods end in `Async`.
+- UI is built in hand-written `*.Designer.cs` files (layout panels, `#nullable enable` at the top, `AutoScaleMode.Dpi`). Control fields use lowercase type prefixes — `txt`, `chk`, `btn`, `cbo`, `lbl`, `lst`, `grp`, `nud`, `prg`, `rtb`, `tab` — and handlers are `<control>_<Event>`. Shared styling helpers are in `UI/Controls/ControlFactory`.
+- SQL files are PascalCase verb–noun names in a folder per feature.
